@@ -23,7 +23,7 @@ class BoxobanEnv(SokobanEnv):
         
 
     def reset(self):
-        self.cache_path = '.sokoban_cache'
+        self.cache_path = os.path.join(os.environ["SCRATCH"], ".sokoban_cache")
         self.train_data_dir = os.path.join(self.cache_path, 'boxoban-levels-master', self.difficulty, self.split)
 
         if not os.path.exists(self.cache_path):
@@ -128,6 +128,3 @@ class BoxobanEnv(SokobanEnv):
         box_mapping = {}
 
         return np.array(room_fixed), np.array(room_state), box_mapping
-
-
-
