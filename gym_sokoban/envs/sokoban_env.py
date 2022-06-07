@@ -8,10 +8,11 @@ import numpy as np
 
 class SokobanEnv(gym.Env):
     metadata = {
-        'render.modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array', 'vector']
+        'render.modes': ['human', 'rgb_array', 'tiny_human', 'tiny_rgb_array', 'vector', 'map']
     }
 
     def __init__(self,
+                 observation_mode="rgb_array",
                  dim_room=(10, 10),
                  max_steps=120,
                  num_boxes=4,
@@ -28,7 +29,7 @@ class SokobanEnv(gym.Env):
 
         self.num_boxes = num_boxes
         self.boxes_on_target = 0        
-        self.observation_mode = "rgb_array"
+        self.observation_mode = observation_mode
 
         # Penalties and Rewards
         self.penalty_for_step = -0.1
@@ -39,19 +40,23 @@ class SokobanEnv(gym.Env):
 
         # Other Settings
         self.viewer = None
-        self.max_steps = max_steps
+        self.max_steps = 120 #max_steps
         self.action_space = Discrete(len(ACTION_LOOKUP))
-        self.screen_height, self.screen_width = (dim_room[0] * 16, dim_room[1] * 16)        
-        self.observation_space = Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3), dtype=np.uint8)
+        self.set_observation_mode()
 
         if reset:
             # Initialize Room
             _ = self.reset()
 
-    def set_observation_mode(self,observation_mode):
-        self.observation_mode=observation_mode
-        self.observation_space = self.dim_room[0]*self.dim_room[1] if self.observation_mode == "vector" \
-            else Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3), dtype=np.uint8)
+    def set_observation_mode(self):
+        self.screen_height, self.screen_width = (self.dim_room[0] * 16, self.dim_room[1] * 16)        
+        self.observation_space = Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3), dtype=np.uint8)
+        if self.observation_mode == "vector":
+            self.observation_space = self.dim_room[0]*self.dim_room[1] 
+        elif self.observation_mode == "map":
+            self.observation_space = Box(low=0, high=5, shape=(self.dim_room[0], self.dim_room[1], 1), dtype=np.uint8)
+        else:
+            self.observation_space  = Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3), dtype=np.uint8)
 
     def seed(self, seed=None):
         self.np_random, seed = seeding.np_random(seed)
@@ -229,7 +234,7 @@ class SokobanEnv(gym.Env):
 
         img = self.get_image(mode, scale)
 
-        if 'rgb_array' in mode:
+        if mode in ['rgb_array', 'vector', 'map']:
             return img
 
         elif 'human' in mode:
@@ -239,8 +244,6 @@ class SokobanEnv(gym.Env):
             self.viewer.imshow(img)
             return self.viewer.isopen
         
-        elif 'vector' in mode:
-            return img
         else:
             super(SokobanEnv, self).render(mode=mode)  # just raise an exception
 
@@ -250,6 +253,8 @@ class SokobanEnv(gym.Env):
             img = room_to_tiny_world_rgb(self.room_state, self.room_fixed, scale=scale)
         elif mode == "vector":
             img = self.room_state.flatten()
+        elif mode == "map": 
+            img = np.expand_dims(self.room_state, -1) # add channel
         else:
             img = room_to_rgb(self.room_state, self.room_fixed)
 
@@ -546,4 +551,4 @@ CHANGE_COORDINATES = {
     3: (0, 1)
 }
 
-RENDERING_MODES = ['rgb_array', 'human', 'tiny_rgb_array', 'tiny_human', 'vector']
+RENDERING_MODES = ['rgb_array', 'human', 'tiny_rgb_array', 'tiny_human', 'vector', 'map']

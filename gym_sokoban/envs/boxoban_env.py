@@ -8,22 +8,28 @@ import zipfile
 from tqdm import tqdm
 import random
 import numpy as np
+from gym.spaces import Box
 
 class BoxobanEnv(SokobanEnv):
     num_boxes = 4
     dim_room=(10, 10)
 
     def __init__(self,
+             observation_mode = "rgb_array",
+             dim_room = (10,10),
              max_steps=120,
-             difficulty='unfiltered', split='train'):
+             difficulty='unfiltered', 
+             split='train'):
         self.difficulty = difficulty
         self.split = split
         self.verbose = False
-        super(BoxobanEnv, self).__init__(self.dim_room, max_steps, self.num_boxes, None)
+        self.observation_mode = observation_mode
+        self.dim_room = dim_room
+        super(BoxobanEnv, self).__init__(self.observation_mode, self.dim_room, max_steps, self.num_boxes, None)
         
 
     def reset(self):
-        self.cache_path = '.sokoban_cache'
+        self.cache_path = os.path.join(os.environ["SCRATCH"], ".sokoban_cache")
         self.train_data_dir = os.path.join(self.cache_path, 'boxoban-levels-master', self.difficulty, self.split)
 
         if not os.path.exists(self.cache_path):
@@ -55,7 +61,7 @@ class BoxobanEnv(SokobanEnv):
         self.reward_last = 0
         self.boxes_on_target = 0
 
-        starting_observation = room_to_rgb(self.room_state, self.room_fixed)
+        starting_observation = self.render(self.observation_mode)
 
         return starting_observation
 
@@ -129,5 +135,14 @@ class BoxobanEnv(SokobanEnv):
 
         return np.array(room_fixed), np.array(room_state), box_mapping
 
+
+    # def set_observation_mode(self,observation_mode):
+    #     self.observation_mode=observation_mode
+    #     if self.observation_mode == "vector":
+    #         self.observation_space = self.dim_room[0]*self.dim_room[1] 
+    #     elif self.observation_mode == "map":
+    #         self.observation_space = Box(low=0, high=5, shape=(self.screen_height, self.screen_width, 1), dtype=np.uint8)
+    #     else:
+    #         self.observation_space  = Box(low=0, high=255, shape=(self.screen_height, self.screen_width, 3), dtype=np.uint8)
 
 
